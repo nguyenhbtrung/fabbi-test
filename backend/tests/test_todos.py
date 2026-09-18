@@ -122,6 +122,51 @@ async def test_partial_updates_preserve_omitted_fields_and_false_completed(clien
 
 
 @pytest.mark.asyncio
+async def test_todo_cache_is_user_scoped_and_invalidated(client: AsyncClient):
+    """List cache keys should be user-scoped and invalidated on mutation."""
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.api.deps import get_redis
+    from app.main import app
+
+    original_override = app.dependency_overrides.get(get_redis)
+    mock_redis = MagicMock()
+    mock_redis.get = AsyncMock(return_value=None)
+    mock_redis.set = AsyncMock()
+    mock_redis.delete = AsyncMock()
+    mock_redis.delete_pattern = AsyncMock()
+    mock_redis.scan_iter = MagicMock(return_value=[])
+    app.dependency_overrides[get_redis] = lambda: mock_redis
+
+    try:
+        token = await get_auth_token(client, "cache@example.com")
+
+        create_response = await client.post(
+            "/api/v1/todos",
+            json={"title": "Cache Todo"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert create_response.status_code == 201
+        mock_redis.delete_pattern.assert_called_with(
+            f"todos:list:{create_response.json()['user_id']}:*"
+        )
+
+        list_response = await client.get(
+            "/api/v1/todos",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert list_response.status_code == 200
+        mock_redis.get.assert_any_call(
+            f"todos:list:{create_response.json()['user_id']}:1:20"
+        )
+    finally:
+        if original_override is None:
+            app.dependency_overrides.pop(get_redis, None)
+        else:
+            app.dependency_overrides[get_redis] = original_override
+
+
+@pytest.mark.asyncio
 async def test_update_todo(client: AsyncClient):
     """Test updating a todo."""
     token = await get_auth_token(client, "update@example.com")

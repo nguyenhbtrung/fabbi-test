@@ -88,6 +88,7 @@
   3. User A still receives stale list data from Redis.
   4. The same cache key persists even after todo mutation.
 - Fix Proposal: Scope Redis keys by authenticated user and query values, for example using user ID and pagination parameters. Invalidate or delete the affected keys after create/update/delete operations so stale cache entries cannot be reused.
+- Verification: Verified by checking the todo list cache key is user-specific and that create/update/delete routes invoke cache invalidation for the authenticated user's todo list keys.
 
 ## FE-01: Logout leaves stale React Query and session state behind
 
