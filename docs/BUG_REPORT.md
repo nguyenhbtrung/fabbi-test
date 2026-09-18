@@ -102,3 +102,4 @@
   2. Log out.
   3. Log in as User B or revisit the app and the stale query state can still be reused in the client despite the token being cleared.
 - Fix Proposal: Invalidate and clear the relevant React Query cache during logout, and ensure user-scoped query keys are reset so stale session data cannot remain visible after sign-out.
+- Verification: Verified by exercising the logout cleanup helper to confirm it removes auth tokens, clears localStorage, and flushes the React Query cache, ensuring that stale user and todo data can no longer be rendered or reused across sessions.
