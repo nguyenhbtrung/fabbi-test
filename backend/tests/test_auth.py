@@ -1,7 +1,11 @@
 """Auth tests."""
 
+from datetime import timedelta
+
 import pytest
 from httpx import AsyncClient
+
+from app.core.security import create_access_token
 
 
 @pytest.mark.asyncio
@@ -56,6 +60,23 @@ async def test_get_current_user(client: AsyncClient):
     assert response.status_code == 200
     data = response.json()
     assert data["email"] == "me@example.com"
+
+
+@pytest.mark.asyncio
+async def test_expired_access_token_rejected(client: AsyncClient):
+    """Expired access tokens should not be accepted."""
+    expired_token = create_access_token(
+        {"sub": "00000000-0000-0000-0000-000000000001"},
+        expires_delta=timedelta(seconds=-1),
+    )
+
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {expired_token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid authentication token"
 
 
 @pytest.mark.asyncio

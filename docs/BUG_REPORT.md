@@ -12,6 +12,7 @@
   2. Send it in an Authorization header to a protected endpoint such as `/api/v1/auth/me`.
   3. The request is accepted instead of failing with `401 Unauthorized`.
 - Fix Proposal: Remove the expiry override and allow `jwt.decode` to enforce token expiration. Catch `ExpiredSignatureError` and `JWTError` and return `None` so the endpoint rejects expired or invalid tokens.
+- Verification: Verified by generating a JWT token with an expiration time in the past and sending it to protected endpoint `/api/v1/auth/me`; the API now correctly rejects the expired token and returns 401 Unauthorized instead of accepting it.
 
 ## BE-02: Cross-user todo access is not restricted by ownership
 
