@@ -23,6 +23,28 @@ router = APIRouter()
 CACHE_TTL = 300  # 5 minutes
 
 
+async def get_owned_todo_or_403(
+    db: AsyncSession,
+    todo_id: uuid.UUID,
+    current_user: User,
+):
+    """Return a todo only if it belongs to the authenticated user."""
+    todo = await get_todo_by_id(db, todo_id)
+    if not todo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Todo not found",
+        )
+
+    if todo.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this todo",
+        )
+
+    return todo
+
+
 @router.get("", response_model=TodoListResponse)
 async def list_todos(
     page: int = Query(1, ge=1),
@@ -92,14 +114,7 @@ async def get_todo(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a specific todo by ID."""
-    todo = await get_todo_by_id(db, todo_id)
-    if not todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Todo not found",
-        )
-
-    return todo
+    return await get_owned_todo_or_403(db, todo_id, current_user)
 
 
 @router.put("/{todo_id}", response_model=TodoResponse)
@@ -111,12 +126,7 @@ async def update_existing_todo(
     redis: RedisClient = Depends(get_redis),
 ):
     """Update a todo item."""
-    todo = await get_todo_by_id(db, todo_id)
-    if not todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Todo not found",
-        )
+    todo = await get_owned_todo_or_403(db, todo_id, current_user)
 
     update_data = todo_data.model_dump()
 
@@ -142,12 +152,7 @@ async def delete_existing_todo(
     redis: RedisClient = Depends(get_redis),
 ):
     """Delete a todo item."""
-    todo = await get_todo_by_id(db, todo_id)
-    if not todo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Todo not found",
-        )
+    todo = await get_owned_todo_or_403(db, todo_id, current_user)
 
     await delete_todo(db, todo)
 

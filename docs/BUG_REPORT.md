@@ -26,6 +26,7 @@
   2. User B knows the todo ID and calls `GET`, `PUT`, or `DELETE` on that endpoint.
   3. The API returns or mutates User A’s todo rather than denying access.
 - Fix Proposal: After fetching a todo by ID, verify that `todo.user_id == current_user.id`. If not, return `403 Forbidden` or `404 Not Found` consistently and stop the request before mutation or response serialization.
+- Verification: Verified by creating a todo for one user and then requesting, updating, and deleting it with a different authenticated user; the API now rejects those requests with `403 Forbidden`.
 
 ## BE-03: Partial todo updates incorrectly overwrite omitted fields and ignore false boolean values
 

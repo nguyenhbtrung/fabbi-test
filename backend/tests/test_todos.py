@@ -55,6 +55,39 @@ async def test_get_todos(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_user_cannot_access_other_users_todo(client: AsyncClient):
+    """Users should not read, update, or delete another user's todo."""
+    user_a_token = await get_auth_token(client, "owner-a@example.com")
+    user_b_token = await get_auth_token(client, "owner-b@example.com")
+
+    todo_response = await client.post(
+        "/api/v1/todos",
+        json={"title": "Private Todo"},
+        headers={"Authorization": f"Bearer {user_b_token}"},
+    )
+    todo_id = todo_response.json()["id"]
+
+    read_response = await client.get(
+        f"/api/v1/todos/{todo_id}",
+        headers={"Authorization": f"Bearer {user_a_token}"},
+    )
+    assert read_response.status_code == 403
+
+    update_response = await client.put(
+        f"/api/v1/todos/{todo_id}",
+        json={"title": "Attempted Update"},
+        headers={"Authorization": f"Bearer {user_a_token}"},
+    )
+    assert update_response.status_code == 403
+
+    delete_response = await client.delete(
+        f"/api/v1/todos/{todo_id}",
+        headers={"Authorization": f"Bearer {user_a_token}"},
+    )
+    assert delete_response.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_update_todo(client: AsyncClient):
     """Test updating a todo."""
     token = await get_auth_token(client, "update@example.com")
