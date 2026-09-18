@@ -73,6 +73,7 @@
   6. Observe that the existing description is overwritten with null.
 
 - Fix Proposal: Use only fields explicitly provided by the client when applying partial updates, for example with: `todo_data.model_dump(exclude_unset=True)` For boolean fields, update the field based on whether it was provided rather than whether its value is truthy. This ensures that explicit false values are persisted while omitted fields remain unchanged.
+- Verification: Verified by creating a todo with a description and then sending a title update with `completed: false`; the API now preserves the existing description and correctly stores the false completion state.
 
 ## BE-04: Todo list cache is not user-scoped and is not invalidated after mutation
 

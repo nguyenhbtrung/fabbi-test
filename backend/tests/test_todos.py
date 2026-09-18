@@ -88,6 +88,40 @@ async def test_user_cannot_access_other_users_todo(client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_partial_updates_preserve_omitted_fields_and_false_completed(client: AsyncClient):
+    """Partial updates must preserve existing fields and apply false boolean values."""
+    token = await get_auth_token(client, "partial@example.com")
+
+    create_response = await client.post(
+        "/api/v1/todos",
+        json={"title": "Initial Todo", "description": "Keep me"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    todo_id = create_response.json()["id"]
+
+    response = await client.put(
+        f"/api/v1/todos/{todo_id}",
+        json={"title": "Updated Title", "completed": False},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "Updated Title"
+    assert data["description"] == "Keep me"
+    assert data["completed"] is False
+
+    second_response = await client.put(
+        f"/api/v1/todos/{todo_id}",
+        json={"title": "Final Title"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert second_response.status_code == 200
+    second_data = second_response.json()
+    assert second_data["description"] == "Keep me"
+    assert second_data["title"] == "Final Title"
+
+
+@pytest.mark.asyncio
 async def test_update_todo(client: AsyncClient):
     """Test updating a todo."""
     token = await get_auth_token(client, "update@example.com")
