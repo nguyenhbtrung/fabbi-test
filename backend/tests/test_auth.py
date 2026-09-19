@@ -5,7 +5,7 @@ from datetime import timedelta
 import pytest
 from httpx import AsyncClient
 
-from app.core.security import create_access_token
+from app.core.security import create_access_token, create_refresh_token
 
 
 @pytest.mark.asyncio
@@ -73,6 +73,20 @@ async def test_expired_access_token_rejected(client: AsyncClient):
     response = await client.get(
         "/api/v1/auth/me",
         headers={"Authorization": f"Bearer {expired_token}"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid authentication token"
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_rejected_for_access_routes(client: AsyncClient):
+    """Refresh tokens should not be accepted as access tokens for protected routes."""
+    refresh_token = create_refresh_token({"sub": "00000000-0000-0000-0000-000000000001"})
+
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {refresh_token}"},
     )
 
     assert response.status_code == 401

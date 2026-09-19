@@ -116,6 +116,7 @@
   2. Submit that refresh token in the `Authorization: Bearer ...` header to `/api/v1/auth/me` or `/api/v1/todos`.
   3. The request succeeds because `sub` is present and there is no token-type check.
 - Fix Proposal: Require `payload.get("type") == "access"` in `get_current_user` and reject refresh tokens with `401 Unauthorized`. Apply the same check anywhere a protected resource depends on an authenticated user.
+- Verification: Verified by using a valid refresh token against `/api/v1/auth/me`; the protected route now rejects it with 401 Unauthorized instead of granting access.
 
 ## BE-06: Logout is a no-op and does not revoke active sessions
 
