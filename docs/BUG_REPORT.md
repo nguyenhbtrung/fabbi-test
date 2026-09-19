@@ -103,3 +103,43 @@
   3. Log in as User B or revisit the app and the stale query state can still be reused in the client despite the token being cleared.
 - Fix Proposal: Invalidate and clear the relevant React Query cache during logout, and ensure user-scoped query keys are reset so stale session data cannot remain visible after sign-out.
 - Verification: Verified by exercising the logout cleanup helper to confirm it removes auth tokens, clears localStorage, and flushes the React Query cache, ensuring that stale user and todo data can no longer be rendered or reused across sessions.
+
+## BE-05: Refresh tokens are accepted as valid access tokens on protected routes
+
+- Type: Backend
+- Location: `backend/app/api/deps.py` — `get_current_user`; `backend/app/core/security.py` — `verify_token`
+- Severity: Critical
+- Impact: A valid refresh token can be presented to protected access endpoints and treated as a valid authenticated session because the dependency checks only for a `sub` claim, not the token type. This violates the intended separation between access and refresh tokens.
+- Evidence: `verify_token` decodes the JWT and returns the payload without validating that the token is an access token. `get_current_user` only checks whether `payload.get("sub")` exists before loading the user.
+- Reproduction:
+  1. Log in or register to obtain a refresh token.
+  2. Submit that refresh token in the `Authorization: Bearer ...` header to `/api/v1/auth/me` or `/api/v1/todos`.
+  3. The request succeeds because `sub` is present and there is no token-type check.
+- Fix Proposal: Require `payload.get("type") == "access"` in `get_current_user` and reject refresh tokens with `401 Unauthorized`. Apply the same check anywhere a protected resource depends on an authenticated user.
+
+## BE-06: Logout is a no-op and does not revoke active sessions
+
+- Type: Backend
+- Location: `backend/app/api/v1/auth.py` — `logout`; `backend/app/api/deps.py` — `get_current_user`
+- Severity: High
+- Impact: The logout endpoint reports success without invalidating or revoking the token in any way. A stolen or reused bearer token remains valid until it expires, which undermines the expected session lifecycle and security guarantees.
+- Evidence: `logout()` simply returns `{ "message": "Successfully logged out" }` without storing a revocation record, blacklisting the token, or invalidating the refresh token. The dependency layer accepts the same token afterward because there is no server-side session invalidation.
+- Reproduction:
+  1. Register or log in to receive an access token.
+  2. Call `POST /api/v1/auth/logout` with that token.
+  3. Reuse the same bearer token against `/api/v1/auth/me` or `/api/v1/todos`.
+  4. The request still succeeds because logout is not revoking the token.
+- Fix Proposal: Add server-side token revocation, such as storing the token `jti` or session key in Redis or the database and checking it in `get_current_user`. Rotate or invalidate refresh tokens as part of logout and reject any revoked credential with `401 Unauthorized`.
+
+## FE-02: Protected routes trust a localStorage token string instead of validating the session
+
+- Type: Frontend
+- Location: `frontend/src/router/ProtectedRoute.tsx` — `ProtectedRoute`; `frontend/src/features/auth/hooks/useAuth.ts` — `useAuth`
+- Severity: High
+- Impact: The UI grants access to protected routes whenever a non-empty token string exists in localStorage, even if the token is expired, malformed, or no longer valid. This can show private pages to users whose server-side session has already expired.
+- Evidence: `ProtectedRoute` does only `const token = localStorage.getItem("access_token")` and checks `if (!token) ...`. There is no JWT validation, no expiry check, and no confirmation from the server before granting access. `useAuth` follows the same pattern when setting `isAuthenticated`.
+- Reproduction:
+  1. Manually place an expired or invalid JWT string into `localStorage`.
+  2. Navigate to a protected route such as the dashboard.
+  3. The app still treats the user as authenticated because it only checks for token presence, not validity.
+- Fix Proposal: Treat localStorage presence as only a hint, not proof of a valid session. Either validate JWT expiration on the client or fetch `/auth/me` and clear the session on 401 before rendering protected pages.
