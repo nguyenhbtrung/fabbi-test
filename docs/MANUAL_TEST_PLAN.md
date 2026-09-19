@@ -19,7 +19,22 @@
   - Database initialized and seeded with the required users.
   - Redis available and cache enabled.
 
-## 3. Test Cases Matrix
+## 3. Priority and Severity Definitions
+
+- Priority defines how quickly a test case should be addressed relative to business impact and release risk.
+  - Critical: must be fixed before release; blocks core business or security use.
+  - High: important to fix soon; affects key user flows or security boundaries.
+  - Medium: should be fixed in the normal delivery cycle; affects usability or correctness but not a hard blocker.
+  - Low: minor issue or cosmetic defect; low business risk.
+- Severity defines the effect of the defect on the system and user experience.
+  - Blocker: prevents the user from completing the main task.
+  - Critical: data loss, security breach, or authorization failure.
+  - Security: exposes sensitive data, weakens authentication or authorization, or creates a security vulnerability.
+  - Major: key feature fails or a significant regression occurs.
+  - Moderate: notable functional degradation with a workaround.
+  - Minor: low-impact issue with minimal user-facing consequence.
+
+## 4. Test Cases Matrix
 
 | TC ID | Module / Feature          | Test Scenario                                                            | Preconditions                                              | Test Steps                                                                                                                                      | Expected Result                                                                                                                                          | Priority / Severity | Status  |
 | ----- | ------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------- |
@@ -38,7 +53,7 @@
 | TC-13 | UX / Session              | Logout clears session state and blocks access to protected routes        | User is authenticated                                      | 1. Sign in.<br>2. Click Logout.<br>3. Try to navigate back to a protected route or refresh the page.                                            | Session state is cleared; protected routes require re-authentication; no stale user context remains.                                                     | High / Major        | Pending |
 | TC-14 | API Recovery              | Server error does not leave the UI in a stale or partially updated state | User is authenticated and a backend error is triggered     | 1. Attempt an invalid or rejected update.<br>2. Observe the UI and request result.                                                              | Error feedback is shown; the UI remains consistent; no stale optimistic state persists after failure.                                                    | Medium / Major      | Pending |
 
-## 4. Expected Verification Notes
+## 5. Expected Verification Notes
 
 - These scenarios represent the manual test plan required by Tier 2 and are not results that were executed in this environment.
 - When the tests are run in practice, record the following clearly:
@@ -46,7 +61,7 @@
   - Screenshots or API logs where relevant
   - Pass/fail status and the corresponding corrective action if a failure occurs
 
-## 5. Defect Tracking & Known Limitations
+## 6. Defect Tracking & Known Limitations
 
 - The current plan covers the core authentication, authorization, and todo flows but does not yet explicitly cover all edge conditions for malformed JWTs, session reuse after logout, or concurrent multi-tab updates.
 - Outstanding scenarios not yet covered include:
