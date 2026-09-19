@@ -136,6 +136,8 @@ async def test_todo_cache_is_user_scoped_and_invalidated(client: AsyncClient):
     mock_redis.delete = AsyncMock()
     mock_redis.delete_pattern = AsyncMock()
     mock_redis.scan_iter = MagicMock(return_value=[])
+    mock_redis.blacklist_token = AsyncMock()
+    mock_redis.is_blacklisted = AsyncMock(return_value=False)
     app.dependency_overrides[get_redis] = lambda: mock_redis
 
     try:

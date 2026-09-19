@@ -1,3 +1,5 @@
+import hashlib
+
 import redis.asyncio as aioredis
 
 from app.core.config import settings
@@ -40,6 +42,14 @@ class RedisClient:
 
     async def exists(self, key: str) -> bool:
         return await self._redis.exists(key)
+
+    async def blacklist_token(self, token: str, ttl_seconds: int = 60 * 60 * 24 * 7):
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        await self._redis.set(f"blacklisted_token:{token_hash}", "1", ex=ttl_seconds)
+
+    async def is_blacklisted(self, token: str) -> bool:
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        return bool(await self._redis.get(f"blacklisted_token:{token_hash}"))
 
 
 redis_client = RedisClient()

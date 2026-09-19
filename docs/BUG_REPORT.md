@@ -131,6 +131,7 @@
   3. Reuse the same bearer token against `/api/v1/auth/me` or `/api/v1/todos`.
   4. The request still succeeds because logout is not revoking the token.
 - Fix Proposal: Add server-side token revocation, such as storing the token `jti` or session key in Redis or the database and checking it in `get_current_user`. Rotate or invalidate refresh tokens as part of logout and reject any revoked credential with `401 Unauthorized`.
+- Verification: Verified by logging out with an access token and then reusing the same bearer token against `/api/v1/auth/me`; the token is now rejected with 401 Unauthorized.
 
 ## FE-02: Protected routes trust a localStorage token string instead of validating the session
 
