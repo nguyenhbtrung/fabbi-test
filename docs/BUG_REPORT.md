@@ -133,15 +133,20 @@
 - Fix Proposal: Add server-side token revocation, such as storing the token `jti` or session key in Redis or the database and checking it in `get_current_user`. Rotate or invalidate refresh tokens as part of logout and reject any revoked credential with `401 Unauthorized`.
 - Verification: Verified by logging out with an access token and then reusing the same bearer token against `/api/v1/auth/me`; the token is now rejected with 401 Unauthorized.
 
-## FE-02: Protected routes trust a localStorage token string instead of validating the session
+## FE-02: Protected routes trust localStorage token presence before session validation
 
-- Type: Frontend
+-Type: Frontend
+
 - Location: `frontend/src/router/ProtectedRoute.tsx` — `ProtectedRoute`; `frontend/src/features/auth/hooks/useAuth.ts` — `useAuth`
-- Severity: High
-- Impact: The UI grants access to protected routes whenever a non-empty token string exists in localStorage, even if the token is expired, malformed, or no longer valid. This can show private pages to users whose server-side session has already expired.
-- Evidence: `ProtectedRoute` does only `const token = localStorage.getItem("access_token")` and checks `if (!token) ...`. There is no JWT validation, no expiry check, and no confirmation from the server before granting access. `useAuth` follows the same pattern when setting `isAuthenticated`.
+- Severity: Medium
+- Impact: `ProtectedRoute` currently grants access to protected routes whenever a non-empty token string exists in `localStorage`, before the session has been validated with the server. An expired, malformed, or otherwise invalid token can therefore cause protected UI to render briefly before the `/auth/me` request fails with `401 Unauthorized`. The response interceptor then clears the session and redirects the user to the login page. The backend still prevents unauthorized access to protected data, so this issue does not allow an expired or invalid token to bypass server-side authorization.
+- Evidence: `ProtectedRoute` only checks whether an access token exists. It does not wait for server-side session validation before rendering the protected route. `useAuth` does perform server-side validation through fetchCurrentUser when a token exists: `useQuery({ queryKey: ["currentUser"], ... });`. If the token is expired or invalid, the API returns 401 Unauthorized and the response interceptor clears the token and redirects the user to `/login`.
 - Reproduction:
   1. Manually place an expired or invalid JWT string into `localStorage`.
   2. Navigate to a protected route such as the dashboard.
-  3. The app still treats the user as authenticated because it only checks for token presence, not validity.
-- Fix Proposal: Treat localStorage presence as only a hint, not proof of a valid session. Either validate JWT expiration on the client or fetch `/auth/me` and clear the session on 401 before rendering protected pages.
+  3. `ProtectedRoute` sees a non-empty token and renders the protected UI immediately.
+  4. `useAuth` calls `/auth/me`.
+  5. The server rejects the token with `401 Unauthorized`.
+  6. The response interceptor clears the session and redirects the user to `/login`.
+  7. Observe that protected UI may be rendered briefly before session validation completes.
+- Fix Proposal: Treat the presence of a token in `localStorage` as only an initial session hint, not proof of authentication. `ProtectedRoute` should wait for the existing `fetchCurrentUser` session validation to complete before rendering protected content. If the session is invalid, redirect to `/login`. Client-side JWT decoding or expiry validation is not required if `/auth/me` remains the authoritative session validation mechanism.
