@@ -150,3 +150,4 @@
   6. The response interceptor clears the session and redirects the user to `/login`.
   7. Observe that protected UI may be rendered briefly before session validation completes.
 - Fix Proposal: Treat the presence of a token in `localStorage` as only an initial session hint, not proof of authentication. `ProtectedRoute` should wait for the existing `fetchCurrentUser` session validation to complete before rendering protected content. If the session is invalid, redirect to `/login`. Client-side JWT decoding or expiry validation is not required if `/auth/me` remains the authoritative session validation mechanism.
+- Verification: Verified by navigating to a protected route with an expired or invalid token; the application now waits for `/auth/me` session validation before rendering protected content and redirects to `/login when` the server returns `401 Unauthorized`.

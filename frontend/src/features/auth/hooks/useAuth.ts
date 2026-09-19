@@ -8,7 +8,7 @@ export function useAuth() {
   const logoutMutation = useLogout();
 
   const token = localStorage.getItem("access_token");
-  const isAuthenticated = !!token;
+  const hasToken = Boolean(token);
 
   const {
     data: user,
@@ -17,9 +17,11 @@ export function useAuth() {
   } = useQuery({
     queryKey: ["currentUser"],
     queryFn: fetchCurrentUser,
-    enabled: isAuthenticated,
+    enabled: hasToken,
     retry: false,
   });
+
+  const isAuthenticated = Boolean(user) && !error;
 
   const logout = () => {
     logoutMutation.mutate(undefined, {
