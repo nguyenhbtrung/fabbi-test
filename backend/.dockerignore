@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+*.sqlite3
+*.db
+test.db
+
+# Git and editor metadata
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Build and test artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Generated or local data
+*.log
