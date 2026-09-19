@@ -21,6 +21,7 @@ build/
 test.db
 .pytest_cache/
 .coverage
+test-results/
 
 # Docker
 postgres_data/
