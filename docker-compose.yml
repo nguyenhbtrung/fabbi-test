@@ -17,8 +17,7 @@ services:
       start_period: 10s
 
   redis:
-    image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "no", "--protected-mode", "yes"]
+    image: redis:7
     ports:
       - "6379:6379"
     healthcheck:
