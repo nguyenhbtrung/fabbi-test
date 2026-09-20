@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useLogout, fetchCurrentUser } from "../api/auth";
+import { clearAuthSession } from "../session";
 
 export function useAuth() {
   const navigate = useNavigate();
   const logoutMutation = useLogout();
 
   const token = localStorage.getItem("access_token");
-  const isAuthenticated = !!token;
+  const hasToken = Boolean(token);
 
   const {
     data: user,
@@ -16,19 +17,21 @@ export function useAuth() {
   } = useQuery({
     queryKey: ["currentUser"],
     queryFn: fetchCurrentUser,
-    enabled: isAuthenticated,
+    enabled: hasToken,
     retry: false,
   });
+
+  const isAuthenticated = Boolean(user) && !error;
 
   const logout = () => {
     logoutMutation.mutate(undefined, {
       onSuccess: () => {
+        clearAuthSession();
         navigate("/login");
       },
       onError: () => {
-        // Even on error, clear local tokens and redirect
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
+        // Even on error, clear local tokens and query cache before redirecting
+        clearAuthSession();
         navigate("/login");
       },
     });

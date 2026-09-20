@@ -6,7 +6,7 @@ venv/
 .venv/
 
 # Environment
-# .env
+.env
 *.env.local
 
 # IDE
@@ -21,6 +21,7 @@ build/
 test.db
 .pytest_cache/
 .coverage
+test-results/
 
 # Docker
 postgres_data/
@@ -31,5 +32,3 @@ docs/ANSWER_KEY.md
 # OS
 .DS_Store
 Thumbs.db
-
-docs/
